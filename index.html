@@ -1,0 +1,519 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8"/>
+<meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+<title>BMW M4 | 3D Experience</title>
+<link href="https://fonts.googleapis.com/css2?family=Orbitron:wght@400;700;900&family=Rajdhani:wght@300;400;600;700&display=swap" rel="stylesheet"/>
+<style>
+*,*::before,*::after{margin:0;padding:0;box-sizing:border-box}
+:root{--blue:#00aaff;--bg:#050508;--panel:#0d0d18;--muted:#777}
+html,body{width:100%;height:100%;background:var(--bg);color:#f0f0f0;font-family:'Rajdhani',sans-serif;overflow:hidden}
+
+/* CANVAS */
+#c{position:fixed;inset:0;width:100vw;height:100vh;z-index:1}
+#pc{position:fixed;inset:0;width:100vw;height:100vh;z-index:0;pointer-events:none}
+
+/* LOADING */
+#ls{position:fixed;inset:0;background:var(--bg);z-index:9999;display:flex;align-items:center;justify-content:center;flex-direction:column;gap:20px;transition:opacity .8s,visibility .8s}
+#ls.hide{opacity:0;visibility:hidden;pointer-events:none}
+.logo-wrap{width:100px;height:100px;border-radius:50%;border:3px solid #222;box-shadow:0 0 40px rgba(0,170,255,.5);overflow:hidden;animation:pulse 2s infinite}
+@keyframes pulse{0%,100%{box-shadow:0 0 30px rgba(0,170,255,.4)}50%{box-shadow:0 0 70px rgba(0,170,255,.9)}}
+.lq{position:absolute;width:50%;height:50%}
+.lq1{top:0;left:0;background:#fff}.lq2{top:0;right:0;background:var(--blue)}
+.lq3{bottom:0;left:0;background:var(--blue)}.lq4{bottom:0;right:0;background:#fff}
+.logo-inner{position:relative;width:100%;height:100%}
+.lt{font-family:'Orbitron',sans-serif;font-size:1.2rem;letter-spacing:6px;color:var(--blue)}
+.lbar-wrap{width:280px;height:3px;background:#1a1a2e;border-radius:2px;overflow:hidden}
+.lbar{height:100%;width:0;background:linear-gradient(90deg,var(--blue),#00ffee);transition:width .15s linear;box-shadow:0 0 10px var(--blue)}
+.lsub{color:var(--muted);font-size:.8rem;letter-spacing:2px}
+
+/* TOP BAR */
+.topbar{position:fixed;top:0;left:0;right:0;height:60px;z-index:50;display:flex;align-items:center;justify-content:space-between;padding:0 32px;background:linear-gradient(180deg,rgba(5,5,8,.95) 0%,transparent 100%);opacity:0;transform:translateY(-20px);transition:opacity .6s .4s,transform .6s .4s}
+.topbar.show{opacity:1;transform:none}
+.brand{display:flex;align-items:center;gap:12px;font-family:'Orbitron',sans-serif;font-size:1.3rem;font-weight:700;letter-spacing:4px}
+.mlogo{width:34px;height:34px;border-radius:50%;border:2px solid #333;overflow:hidden;position:relative;box-shadow:0 0 10px rgba(0,170,255,.5)}
+.mq{position:absolute;width:50%;height:50%}
+.mq1{top:0;left:0;background:#fff}.mq2{top:0;right:0;background:var(--blue)}
+.mq3{bottom:0;left:0;background:var(--blue)}.mq4{bottom:0;right:0;background:#fff}
+.mlogo-inner{position:relative;width:100%;height:100%}
+.nav a{margin-left:28px;color:#888;text-decoration:none;font-size:.85rem;letter-spacing:2px;text-transform:uppercase;transition:color .3s;cursor:pointer}
+.nav a:hover{color:var(--blue)}
+
+/* HERO */
+.hero{position:fixed;left:48px;bottom:130px;z-index:50;opacity:0;transform:translateX(-30px);transition:opacity .8s .7s,transform .8s .7s}
+.hero.show{opacity:1;transform:none}
+.hsub{font-size:.7rem;letter-spacing:5px;color:var(--blue);text-transform:uppercase;margin-bottom:8px}
+.htitle{font-family:'Orbitron',sans-serif;font-size:clamp(2.8rem,6vw,5rem);font-weight:900;line-height:1;color:#fff;text-shadow:0 0 40px rgba(0,170,255,.25)}
+.htitle span{color:var(--blue)}
+.hdesc{color:var(--muted);font-size:.95rem;letter-spacing:2px;margin:14px 0 24px}
+.btns{display:flex;gap:14px;flex-wrap:wrap}
+.btn1{padding:12px 30px;background:linear-gradient(135deg,#003d73,var(--blue));border:none;color:#fff;font-family:'Rajdhani',sans-serif;font-size:.95rem;font-weight:600;letter-spacing:2px;border-radius:4px;cursor:pointer;transition:all .3s;box-shadow:0 0 20px rgba(0,170,255,.3)}
+.btn1:hover{transform:translateY(-2px);box-shadow:0 4px 30px rgba(0,170,255,.6)}
+.btn2{padding:12px 30px;background:transparent;border:1px solid rgba(0,170,255,.5);color:var(--blue);font-family:'Rajdhani',sans-serif;font-size:.95rem;font-weight:600;letter-spacing:2px;border-radius:4px;cursor:pointer;transition:all .3s}
+.btn2:hover{background:rgba(0,170,255,.1);transform:translateY(-2px)}
+
+/* COLORS */
+.cpanel{position:fixed;right:28px;bottom:110px;z-index:50;background:rgba(8,8,18,.85);backdrop-filter:blur(16px);border:1px solid rgba(255,255,255,.07);border-radius:14px;padding:16px 20px;opacity:0;transform:translateX(20px);transition:opacity .8s .9s,transform .8s .9s}
+.cpanel.show{opacity:1;transform:none}
+.clbl{font-size:.6rem;letter-spacing:3px;color:var(--muted);margin-bottom:12px;text-transform:uppercase}
+.swatches{display:flex;gap:9px;flex-wrap:wrap;max-width:220px;margin-bottom:10px}
+.sw{width:26px;height:26px;border-radius:50%;border:2px solid transparent;cursor:pointer;transition:all .3s;box-shadow:0 2px 8px rgba(0,0,0,.4)}
+.sw:hover{transform:scale(1.25)}
+.sw.on{border-color:var(--blue);box-shadow:0 0 14px var(--blue)}
+.cname{font-size:.75rem;color:#999;letter-spacing:1px;text-align:center}
+
+/* STATS */
+.stats{position:fixed;right:28px;top:50%;transform:translateY(-50%);z-index:50;display:flex;flex-direction:column;gap:18px;opacity:0;transition:opacity .8s 1.1s}
+.stats.show{opacity:1}
+.sitem{text-align:right;border-right:2px solid rgba(0,170,255,.4);padding-right:14px}
+.sval{display:block;font-family:'Orbitron',sans-serif;font-size:1.3rem;font-weight:700}
+.slbl{display:block;font-size:.6rem;letter-spacing:2px;color:var(--blue)}
+
+/* PANELS */
+.overlay{position:fixed;inset:0;z-index:100;background:rgba(0,0,0,.65);backdrop-filter:blur(5px);opacity:0;pointer-events:none;transition:opacity .3s}
+.overlay.on{opacity:1;pointer-events:all}
+.panel{position:fixed;right:0;top:0;bottom:0;width:min(460px,90vw);background:var(--panel);border-left:1px solid rgba(0,170,255,.15);z-index:101;padding:50px 36px 36px;overflow-y:auto;transform:translateX(100%);transition:transform .4s cubic-bezier(.4,0,.2,1)}
+.panel.open{transform:none}
+.panel h2{font-family:'Orbitron',sans-serif;font-size:1.3rem;margin-bottom:28px;letter-spacing:2px}
+.pclose{position:absolute;top:18px;right:22px;background:none;border:none;color:#555;font-size:1.2rem;cursor:pointer;transition:color .3s}
+.pclose:hover{color:var(--blue)}
+.srow{display:flex;justify-content:space-between;padding:13px 0;border-bottom:1px solid rgba(255,255,255,.05);font-size:.93rem}
+.srow:last-child{border:none}
+.srow span:first-child{color:var(--muted)}
+.srow span:last-child{font-weight:600}
+.flist{display:flex;flex-direction:column;gap:10px}
+.fi{padding:14px;border-radius:8px;background:rgba(255,255,255,.03);border:1px solid rgba(255,255,255,.05);font-size:.9rem;color:#ccc;transition:all .3s}
+.fi:hover{background:rgba(0,170,255,.06);border-color:rgba(0,170,255,.2);color:#fff}
+.gcols{display:grid;grid-template-columns:1fr 1fr;gap:10px}
+.gc{height:76px;border-radius:8px;cursor:pointer;display:flex;align-items:flex-end;padding:10px;border:2px solid rgba(255,255,255,.08);transition:all .3s;color:#fff;font-size:.78rem;letter-spacing:1px}
+.gc:hover{transform:scale(1.03);border-color:var(--blue)}
+
+/* HINT */
+.hint{position:fixed;bottom:22px;left:50%;transform:translateX(-50%);background:rgba(255,255,255,.04);border:1px solid rgba(255,255,255,.09);padding:7px 22px;border-radius:20px;font-size:.78rem;color:var(--muted);letter-spacing:1px;z-index:50;opacity:0;transition:opacity .8s 1.4s}
+.hint.show{opacity:1}
+
+/* SCROLLBAR */
+::-webkit-scrollbar{width:4px}
+::-webkit-scrollbar-thumb{background:var(--blue);border-radius:2px}
+
+@media(max-width:600px){.hero{left:16px;bottom:170px}.stats{display:none}.cpanel{right:12px;bottom:90px}.topbar{padding:0 14px}.nav a{margin-left:14px}.htitle{font-size:2.8rem}}
+</style>
+</head>
+<body>
+
+<!-- LOADING -->
+<div id="ls">
+  <div class="logo-wrap">
+    <div class="logo-inner">
+      <div class="lq lq1"></div><div class="lq lq2"></div>
+      <div class="lq lq3"></div><div class="lq lq4"></div>
+    </div>
+  </div>
+  <p class="lt">BMW M4 COMPETITION</p>
+  <div class="lbar-wrap"><div class="lbar" id="lb"></div></div>
+  <p class="lsub" id="lst">Initializing...</p>
+</div>
+
+<!-- CANVASES -->
+<canvas id="pc"></canvas>
+<canvas id="c"></canvas>
+
+<!-- TOP BAR -->
+<div class="topbar" id="tb">
+  <div class="brand">
+    <div class="mlogo"><div class="mlogo-inner"><div class="mq mq1"></div><div class="mq mq2"></div><div class="mq mq3"></div><div class="mq mq4"></div></div></div>
+    BMW
+  </div>
+  <div class="nav">
+    <a onclick="showP('specs')">Specs</a>
+    <a onclick="showP('feats')">Features</a>
+    <a onclick="showP('cols')">Colors</a>
+  </div>
+</div>
+
+<!-- HERO -->
+<div class="hero" id="hero">
+  <div class="hsub">The Ultimate Driving Machine</div>
+  <h1 class="htitle">BMW <span>M4</span></h1>
+  <p class="hdesc">Competition &middot; 503 HP &middot; Twin-Turbo &middot; 0&ndash;60 in 3.8s</p>
+  <div class="btns">
+    <button class="btn1" onclick="spinIt()">&#8635; Spin Car</button>
+    <button class="btn2" onclick="showP('specs')">View Specs</button>
+  </div>
+</div>
+
+<!-- COLOR PICKER -->
+<div class="cpanel" id="cp">
+  <div class="clbl">Body Color</div>
+  <div class="swatches" id="swatches"></div>
+  <div class="cname" id="cn">Sapphire Black</div>
+</div>
+
+<!-- STATS -->
+<div class="stats" id="st">
+  <div class="sitem"><span class="sval">503</span><span class="slbl">HP</span></div>
+  <div class="sitem"><span class="sval">3.8s</span><span class="slbl">0&ndash;60</span></div>
+  <div class="sitem"><span class="sval">180</span><span class="slbl">MPH</span></div>
+  <div class="sitem"><span class="sval">479</span><span class="slbl">TQ lb&#8209;ft</span></div>
+</div>
+
+<!-- OVERLAY -->
+<div class="overlay" id="ov" onclick="closeP()"></div>
+
+<!-- SPECS PANEL -->
+<div class="panel" id="panel-specs">
+  <button class="pclose" onclick="closeP()">&#10005;</button>
+  <h2>M4 <span style="color:var(--blue)">SPECS</span></h2>
+  <div class="srow"><span>Engine</span><span>3.0L Twin-Turbo I6</span></div>
+  <div class="srow"><span>Power</span><span>503 HP @ 6,250 RPM</span></div>
+  <div class="srow"><span>Torque</span><span>479 lb-ft @ 2,750 RPM</span></div>
+  <div class="srow"><span>0&ndash;60 mph</span><span>3.8 seconds</span></div>
+  <div class="srow"><span>Top Speed</span><span>180 mph (governed)</span></div>
+  <div class="srow"><span>Transmission</span><span>8-Speed M Steptronic</span></div>
+  <div class="srow"><span>Drivetrain</span><span>M xDrive AWD / RWD</span></div>
+  <div class="srow"><span>Curb Weight</span><span>3,862 lbs</span></div>
+  <div class="srow"><span>Wheelbase</span><span>112.5 in</span></div>
+  <div class="srow"><span>Brakes</span><span>M Compound Ceramic</span></div>
+  <div class="srow"><span>Fuel Economy</span><span>16 City / 23 Hwy MPG</span></div>
+  <div class="srow"><span>Base Price</span><span>$97,895 USD</span></div>
+</div>
+
+<!-- FEATURES PANEL -->
+<div class="panel" id="panel-feats">
+  <button class="pclose" onclick="closeP()">&#10005;</button>
+  <h2>M4 <span style="color:var(--blue)">FEATURES</span></h2>
+  <div class="flist">
+    <div class="fi">&#127958;&#65039; M-tuned adaptive suspension with 3-stage dampers</div>
+    <div class="fi">&#128266; M Sport exhaust with active valve control</div>
+    <div class="fi">&#127918; M Drive Professional with Drift Analyzer</div>
+    <div class="fi">&#128721; Carbon fiber roof &amp; M carbon exterior package</div>
+    <div class="fi">&#127860; M Servotronic variable-ratio steering</div>
+    <div class="fi">&#128186; M Carbon ceramic brakes (optional)</div>
+    <div class="fi">&#128250; BMW Live Cockpit Professional 12.3&quot; display</div>
+    <div class="fi">&#128294; Laserlight headlights with 600m range</div>
+    <div class="fi">&#127937; Launch Control &amp; M traction control</div>
+    <div class="fi">&#127775; Harman Kardon 464W surround sound</div>
+  </div>
+</div>
+
+<!-- COLORS PANEL -->
+<div class="panel" id="panel-cols">
+  <button class="pclose" onclick="closeP()">&#10005;</button>
+  <h2>CHOOSE <span style="color:var(--blue)">COLOR</span></h2>
+  <p style="color:#666;font-size:.85rem;margin-bottom:20px;letter-spacing:1px">Click to apply live on the car</p>
+  <div class="gcols" id="gcols"></div>
+</div>
+
+<!-- HINT -->
+<div class="hint" id="hint">&#128433;&#65039; Drag to rotate &nbsp;&bull;&nbsp; Scroll to zoom &nbsp;&bull;&nbsp; Right-click to pan</div>
+
+<!-- THREE.JS (UMD — works everywhere, no server needed) -->
+<script src="https://cdn.jsdelivr.net/npm/three@0.160.0/build/three.min.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/three@0.160.0/examples/js/controls/OrbitControls.js"></script>
+
+<script>
+// ─── COLOR DATA ───────────────────────────────────────────────────────────────
+const COLORS = [
+  { hex:'#1a1a2e', name:'Sapphire Black',     val:0x1a1a2e },
+  { hex:'#c0392b', name:'M Red',              val:0xc0392b },
+  { hex:'#2980b9', name:'Laguna Blue',        val:0x2980b9 },
+  { hex:'#e8e8e0', name:'Alpine White',       val:0xe8e8e0 },
+  { hex:'#2c2c2c', name:'Carbon Black',       val:0x2c2c2c },
+  { hex:'#4a7c59', name:'Isle of Man Green',  val:0x4a7c59 },
+  { hex:'#e67e22', name:'Fire Orange',        val:0xe67e22 },
+  { hex:'#8e44ad', name:'Violet',             val:0x8e44ad },
+];
+
+// build swatches
+const swEl = document.getElementById('swatches');
+const gcEl = document.getElementById('gcols');
+COLORS.forEach((c,i)=>{
+  const sw = document.createElement('div');
+  sw.className='sw'+(i===0?' on':'');
+  sw.style.background=c.hex; sw.title=c.name;
+  sw.onclick=()=>pickColor(c,sw);
+  swEl.appendChild(sw);
+  const gc=document.createElement('div');
+  gc.className='gc'; gc.style.background=c.hex;
+  gc.innerHTML=`<span>${c.name}</span>`;
+  if(c.name==='Alpine White') gc.style.color='#333';
+  gc.onclick=()=>{ pickColor(c); closeP(); };
+  gcEl.appendChild(gc);
+});
+
+function pickColor(c, swElem){
+  document.querySelectorAll('.sw').forEach(s=>s.classList.remove('on'));
+  if(swElem) swElem.classList.add('on');
+  document.getElementById('cn').textContent=c.name;
+  applyColor(c.val);
+}
+
+// ─── LOADING BAR ─────────────────────────────────────────────────────────────
+function setLoad(pct,msg){ document.getElementById('lb').style.width=pct+'%'; if(msg) document.getElementById('lst').textContent=msg; }
+
+// ─── PARTICLES ───────────────────────────────────────────────────────────────
+const pc=document.getElementById('pc'), px=pc.getContext('2d');
+let parts=[];
+function resizePC(){ pc.width=innerWidth; pc.height=innerHeight; }
+resizePC();
+for(let i=0;i<70;i++) parts.push(mkPart());
+function mkPart(){ return { x:Math.random()*pc.width, y:Math.random()*pc.height, r:Math.random()*1.4+.3, sx:(Math.random()-.5)*.4, sy:-Math.random()*.5-.1, op:Math.random()*.5+.1, life:Math.random(), decay:Math.random()*.003+.001, col:Math.random()>.5?'0,170,255':'200,220,255' }; }
+function tickParts(){ px.clearRect(0,0,pc.width,pc.height); parts.forEach(p=>{ p.x+=p.sx; p.y+=p.sy; p.life-=p.decay; if(p.life<=0) Object.assign(p,mkPart(),{x:Math.random()*pc.width,y:Math.random()*pc.height}); px.save(); px.globalAlpha=p.op*p.life; px.shadowColor=`rgba(${p.col},.8)`; px.shadowBlur=6; px.fillStyle=`rgba(${p.col},${p.op})`; px.beginPath(); px.arc(p.x,p.y,p.r,0,Math.PI*2); px.fill(); px.restore(); }); requestAnimationFrame(tickParts); }
+tickParts();
+
+// ─── THREE.JS ────────────────────────────────────────────────────────────────
+setLoad(20,'Setting up 3D engine...');
+const renderer = new THREE.WebGLRenderer({ canvas:document.getElementById('c'), antialias:true, alpha:true });
+renderer.setSize(innerWidth,innerHeight);
+renderer.setPixelRatio(Math.min(devicePixelRatio,2));
+renderer.shadowMap.enabled=true;
+renderer.shadowMap.type=THREE.PCFSoftShadowMap;
+renderer.outputColorSpace=THREE.SRGBColorSpace;
+renderer.toneMapping=THREE.ACESFilmicToneMapping;
+renderer.toneMappingExposure=0.85;
+
+const scene=new THREE.Scene();
+scene.background=new THREE.Color(0x050508);
+scene.fog=new THREE.FogExp2(0x050508,.025);
+
+const camera=new THREE.PerspectiveCamera(42,innerWidth/innerHeight,.1,200);
+camera.position.set(5,2.5,8);
+
+const controls=new THREE.OrbitControls(camera,renderer.domElement);
+controls.enableDamping=true; controls.dampingFactor=.04;
+controls.minDistance=3; controls.maxDistance=16;
+controls.maxPolarAngle=Math.PI/2+.08; controls.minPolarAngle=.2;
+controls.autoRotate=true; controls.autoRotateSpeed=0.7;
+controls.target.set(0,.5,0);
+
+// ─── LIGHTS ──────────────────────────────────────────────────────────────────
+setLoad(35,'Building lights...');
+scene.add(new THREE.AmbientLight(0xffffff,.35));
+const kl=new THREE.SpotLight(0xffffff,4,35,Math.PI/5,.3);
+kl.position.set(7,12,6); kl.castShadow=true;
+kl.shadow.mapSize.set(2048,2048); scene.add(kl);
+const fl=new THREE.SpotLight(0x4488ff,2.5,22,Math.PI/4,.5);
+fl.position.set(-6,6,-4); scene.add(fl);
+const rl=new THREE.SpotLight(0x0033ff,2,18,Math.PI/3,.5);
+rl.position.set(0,4,-10); scene.add(rl);
+const gl=new THREE.PointLight(0x00aaff,.6,12);
+gl.position.set(0,-.3,0); scene.add(gl);
+
+// ─── FLOOR ───────────────────────────────────────────────────────────────────
+setLoad(45,'Building showroom...');
+const floor=new THREE.Mesh(
+  new THREE.PlaneGeometry(40,40),
+  new THREE.MeshStandardMaterial({color:0x080810,roughness:.06,metalness:.92})
+);
+floor.rotation.x=-Math.PI/2; floor.receiveShadow=true; scene.add(floor);
+const grid=new THREE.GridHelper(30,42,0x00aaff,0x111130);
+grid.position.y=.01; grid.material.opacity=.2; grid.material.transparent=true; scene.add(grid);
+
+// Ring decorations
+function mkRing(r,col,y,op){
+  const m=new THREE.Mesh(new THREE.TorusGeometry(r,.025,8,80),new THREE.MeshBasicMaterial({color:col,transparent:true,opacity:op}));
+  m.rotation.x=Math.PI/2; m.position.y=y; scene.add(m); return m;
+}
+const rings=[mkRing(3.4,0x00aaff,.02,.35),mkRing(4.6,0x0044aa,.01,.2),mkRing(5.8,0x002266,.005,.1)];
+
+// ─── CAR BUILD ───────────────────────────────────────────────────────────────
+setLoad(60,'Building BMW M4...');
+let carGroup=null, paintMat=null, wheels=[];
+
+function buildCar(col){
+  if(carGroup){ scene.remove(carGroup); carGroup.traverse(c=>{ if(c.geometry)c.geometry.dispose(); if(c.material&&!Array.isArray(c.material))c.material.dispose(); }); }
+  carGroup=new THREE.Group(); wheels=[];
+
+  paintMat=new THREE.MeshStandardMaterial({color:col,roughness:.18,metalness:.88,envMapIntensity:1.2});
+  const glass=new THREE.MeshStandardMaterial({color:0x080818,roughness:.05,metalness:.1,transparent:true,opacity:.55});
+  const chrome=new THREE.MeshStandardMaterial({color:0xbbbbbb,roughness:.04,metalness:1});
+  const black=new THREE.MeshStandardMaterial({color:0x080808,roughness:.85,metalness:.05});
+  const tire=new THREE.MeshStandardMaterial({color:0x0d0d0d,roughness:.92});
+  const rim=new THREE.MeshStandardMaterial({color:0x888888,roughness:.08,metalness:1});
+  const glow=new THREE.MeshStandardMaterial({color:0xffffff,emissive:0xffffff,emissiveIntensity:.9});
+  const tail=new THREE.MeshStandardMaterial({color:0xff1100,emissive:0xff1100,emissiveIntensity:1.1,transparent:true,opacity:.85});
+
+  function add(geo,mat,px,py,pz,rx,ry,rz,shadow){
+    const m=new THREE.Mesh(geo,mat);
+    m.position.set(px||0,py||0,pz||0);
+    if(rx) m.rotation.x=rx; if(ry) m.rotation.y=ry; if(rz) m.rotation.z=rz;
+    if(shadow!==false){ m.castShadow=true; m.receiveShadow=true; }
+    carGroup.add(m); return m;
+  }
+
+  // === BODY ===
+  add(new THREE.BoxGeometry(4.5,.62,2.02),paintMat, 0,.55,0);
+  add(new THREE.BoxGeometry(4.7,.22,2.12),paintMat, 0,.25,0);   // sill
+
+  // === CABIN (tapered roof) ===
+  const cabG=new THREE.BoxGeometry(2.2,.68,1.88);
+  const cab=new THREE.Mesh(cabG,paintMat);
+  const p=cab.geometry.attributes.position;
+  for(let i=0;i<p.count;i++){ if(p.getY(i)>0){ p.setX(i,p.getX(i)*.82); p.setZ(i,p.getZ(i)*.88); } }
+  p.needsUpdate=true; cab.position.set(-.1,1.14,0); cab.castShadow=true; carGroup.add(cab);
+
+  // === WINDSHIELDS ===
+  add(new THREE.BoxGeometry(.06,.62,1.72),glass, .92,1.12,0, 0,0,-.40);
+  add(new THREE.BoxGeometry(.06,.54,1.72),glass,-1.08,1.10,0, 0,0, .50);
+  // side windows
+  [-1,1].forEach(s=>add(new THREE.BoxGeometry(1.85,.48,.05),glass,-.06,1.10,s*.96));
+
+  // === HOOD ===
+  add(new THREE.BoxGeometry(1.55,.07,1.96),paintMat, 1.62,.87,0, 0,0,-.04);
+  // hood vents
+  [-1,1].forEach(s=>add(new THREE.BoxGeometry(.5,.05,.25),black,1.65,.9,s*.55));
+
+  // === TRUNK ===
+  add(new THREE.BoxGeometry(1.0,.07,1.96),paintMat,-1.78,.87,0, 0,0, .06);
+
+  // === FRONT BUMPER ===
+  add(new THREE.BoxGeometry(.24,.46,2.02),paintMat, 2.33,.36,0);
+  add(new THREE.BoxGeometry(.4,.05,2.06),black,      2.35,.14,0);  // splitter
+
+  // === REAR BUMPER / DIFFUSER ===
+  add(new THREE.BoxGeometry(.24,.46,2.02),paintMat,-2.33,.36,0);
+  add(new THREE.BoxGeometry(.38,.12,1.8),black,     -2.42,.1,0);   // diffuser
+
+  // === BMW KIDNEY GRILLE (front) ===
+  [-.44,.44].forEach(s=>{
+    add(new THREE.BoxGeometry(.1,.3,.38),black, 2.43,.52,s);
+    add(new THREE.BoxGeometry(.08,.32,.41),chrome,2.42,.52,s);
+  });
+  // grille mesh lines
+  for(let i=-.35;i<=.35;i+=.12){
+    add(new THREE.BoxGeometry(.08,.28,.02),chrome,2.44,.52,i);
+  }
+
+  // === HEADLIGHTS ===
+  [-.78,.78].forEach(s=>{
+    add(new THREE.BoxGeometry(.09,.14,.52),glow,2.41,.60,s);
+    add(new THREE.BoxGeometry(.08,.04,.52),glow,2.43,.73,s); // DRL
+    const hl=new THREE.PointLight(0xffffff,.4,4.5);
+    hl.position.set(2.65,.65,s); carGroup.add(hl);
+  });
+
+  // === TAILLIGHTS ===
+  [-.68,.68].forEach(s=>{
+    add(new THREE.BoxGeometry(.07,.2,.5),tail,-2.41,.63,s);
+    const tl=new THREE.PointLight(0xff1100,.25,3.5);
+    tl.position.set(-2.6,.65,s); carGroup.add(tl);
+  });
+
+  // === EXHAUST (quad tips) ===
+  [-.55,-.25,.25,.55].forEach(s=>{
+    add(new THREE.CylinderGeometry(.065,.065,.14,14),chrome,-2.46,.18,s, 0,0,Math.PI/2);
+  });
+
+  // === SIDE MIRRORS ===
+  [-1,1].forEach(s=>add(new THREE.BoxGeometry(.2,.12,.08),paintMat, .9,1.02,s*1.01));
+
+  // === ROOF SPOILER ===
+  add(new THREE.BoxGeometry(.75,.1,1.88),paintMat,-1.12,1.53,0, 0,0,.1);
+
+  // === M BADGE (front) ===
+  add(new THREE.BoxGeometry(.06,.12,.35),chrome,2.44,.82,0);
+
+  // === WHEELS ===
+  function addWheel(wx,wz){
+    const wg=new THREE.Group();
+    // tire
+    const t=new THREE.Mesh(new THREE.TorusGeometry(.42,.155,18,44),tire);
+    t.rotation.y=Math.PI/2; wg.add(t);
+    // rim face
+    const rd=new THREE.Mesh(new THREE.CylinderGeometry(.28,.28,.05,22),rim);
+    rd.rotation.z=Math.PI/2; wg.add(rd);
+    // 5 spokes
+    for(let i=0;i<5;i++){
+      const angle=(i/5)*Math.PI*2;
+      const sk=new THREE.Mesh(new THREE.BoxGeometry(.48,.035,.055),rim);
+      sk.rotation.z=Math.PI/2;
+      sk.position.set(.02,Math.sin(angle)*.14,Math.cos(angle)*.14);
+      sk.rotation.x=angle; wg.add(sk);
+    }
+    // center cap
+    const cc=new THREE.Mesh(new THREE.CylinderGeometry(.065,.065,.08,14),chrome);
+    cc.rotation.z=Math.PI/2; wg.add(cc);
+    // brake disc
+    const bd=new THREE.Mesh(new THREE.CylinderGeometry(.2,.2,.04,22),new THREE.MeshStandardMaterial({color:0x555555,roughness:.35,metalness:.8}));
+    bd.rotation.z=Math.PI/2; bd.position.x=-.05; wg.add(bd);
+    wg.position.set(wx,.43,wz); wg.castShadow=true;
+    carGroup.add(wg);
+    wheels.push(wg);
+    return wg;
+  }
+  addWheel( 1.55, 1.0);
+  addWheel( 1.55,-1.0);
+  addWheel(-1.55, 1.0);
+  addWheel(-1.55,-1.0);
+
+  scene.add(carGroup);
+}
+
+buildCar(0x1a1a2e);
+
+function applyColor(hex){ buildCar(hex); }
+
+// ─── SPIN ─────────────────────────────────────────────────────────────────────
+let spinning=false, spinAng=0;
+function spinIt(){
+  if(spinning) return;
+  spinning=true; spinAng=0; controls.autoRotate=false;
+}
+
+// ─── PANELS ───────────────────────────────────────────────────────────────────
+function showP(id){
+  document.querySelectorAll('.panel').forEach(p=>p.classList.remove('open'));
+  document.getElementById('ov').classList.add('on');
+  document.getElementById('panel-'+id).classList.add('open');
+  controls.autoRotate=false;
+}
+function closeP(){
+  document.querySelectorAll('.panel').forEach(p=>p.classList.remove('open'));
+  document.getElementById('ov').classList.remove('on');
+  controls.autoRotate=true;
+}
+
+// ─── DONE LOADING ─────────────────────────────────────────────────────────────
+setLoad(95,'Almost ready...');
+setTimeout(()=>{
+  setLoad(100,'Ready!');
+  setTimeout(()=>{
+    document.getElementById('ls').classList.add('hide');
+    ['tb','hero','cp','st','hint'].forEach(id=>document.getElementById(id).classList.add('show'));
+  },500);
+},1000);
+
+// ─── ANIMATION LOOP ───────────────────────────────────────────────────────────
+const clock=new THREE.Clock();
+(function loop(){
+  requestAnimationFrame(loop);
+  const d=clock.getDelta(), t=clock.getElapsedTime();
+  controls.update();
+  // rings pulse
+  rings.forEach((r,i)=>{ r.material.opacity=.1+Math.sin(t*1.5+i)*.15; });
+  // car float
+  if(carGroup&&!spinning) carGroup.position.y=Math.sin(t*.8)*.045;
+  // spin 360
+  if(spinning&&carGroup){
+    carGroup.rotation.y+=d*3; spinAng+=d*3;
+    if(spinAng>=Math.PI*2){ carGroup.rotation.y=0; spinning=false; controls.autoRotate=true; }
+  }
+  // wheel spin
+  if(controls.autoRotate||spinning) wheels.forEach(w=>{ if(w.children[0]) w.children[0].rotation.x+=d*2; });
+  // ground light pulse
+  gl.intensity=.4+Math.sin(t*2)*.25;
+  renderer.render(scene,camera);
+})();
+
+// ─── RESIZE ──────────────────────────────────────────────────────────────────
+window.addEventListener('resize',()=>{
+  camera.aspect=innerWidth/innerHeight; camera.updateProjectionMatrix();
+  renderer.setSize(innerWidth,innerHeight); resizePC();
+});
+
+// ─── KEYBOARD ────────────────────────────────────────────────────────────────
+window.addEventListener('keydown',e=>{ if(e.key==='r'||e.key==='R') spinIt(); if(e.key==='Escape') closeP(); });
+</script>
+</body>
+</html>
